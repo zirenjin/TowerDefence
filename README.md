@@ -1,19 +1,150 @@
-# React + TypeScript + Vite
+# 塔防游戏 (Tower Defence)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个使用 React + TypeScript + Vite 构建的经典塔防游戏。
 
-Currently, two official plugins are available:
+## 🎮 游戏简介
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+这是一款策略性塔防游戏，玩家需要在网格地图上放置不同类型的防御塔，阻止敌人从起点到达终点。合理规划防御塔的位置和类型，击败一波又一波的敌人！
 
-## React Compiler
+## 🛠️ 技术栈
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 18** - UI 框架
+- **TypeScript** - 类型安全
+- **Vite** - 快速开发构建工具
+- **Tailwind CSS** - 样式框架
+- **UUID** - 唯一标识符生成
 
-## Expanding the ESLint configuration
+## 📋 游戏规则
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 基础规则
+
+- **初始金钱**: 100 金币
+- **初始生命**: 20 点
+- **网格大小**: 20×20
+- **游戏目标**: 在生命值耗尽前存活尽可能多的波次
+
+### 游戏机制
+
+1. **路径系统**
+   - 每局游戏随机生成起点和终点
+   - 敌人沿固定路径移动
+   - 放置防御塔会动态重新计算路径
+   - **注意**: 不能阻断敌人的路径！
+
+2. **波次系统**
+   - 第一波: 3 个敌人
+   - 每波增加: 2 个敌人
+   - 生成间隔: 从 0.5 秒逐渐递减至最低 0.2 秒
+   - 击败所有敌人后可以开始下一波
+
+3. **敌人属性**
+   - **基础生命值**: 100 HP
+   - **生命值增长**: 每波增加 15%
+   - **移动速度**: 1.5 单位/秒
+   - **击杀奖励**: 20 金币
+   - **精英敌人**: 20% 概率生成，生命值大幅提升
+
+4. **失败条件**
+   - 当生命值降至 0 时游戏结束
+   - 每个敌人到达终点会扣除 1 点生命
+
+## 🏰 防御塔类型
+
+### 1. 基础塔 (PRIMARY)
+- **成本**: 50 金币
+- **射程**: 5 格
+- **伤害**: 20
+- **攻击速度**: 0.5 秒/次
+- **特点**: 性价比高，适合初期防御
+
+### 2. 减速塔 (SLOW)
+- **成本**: 100 金币
+- **射程**: 4 格
+- **伤害**: 5
+- **攻击速度**: 1.0 秒/次
+- **特殊效果**: 减速 60%，持续 1.5 秒
+- **特点**: 延缓敌人速度，配合其他塔使用
+
+### 3. 范围塔 (AREA)
+- **成本**: 150 金币
+- **射程**: 3 格
+- **伤害**: 15
+- **攻击速度**: 1.5 秒/次
+- **溅射范围**: 2.5 格
+- **特点**: 群体伤害，适合对付成群敌人
+
+### 4. 墙 (WALL)
+- **成本**: 5 金币
+- **特点**: 无攻击能力，用于改变敌人路径，引导敌人走更长的路线
+
+## 🎯 游戏策略提示
+
+1. **合理规划路径**: 使用墙体延长敌人的行进路径
+2. **防御塔组合**: 混合使用不同类型的防御塔效果更佳
+3. **优先升级**: 在关键位置放置高伤害防御塔
+4. **经济管理**: 平衡当前防御需求和未来发展
+5. **减速控制**: 减速塔能为其他防御塔争取更多输出时间
+
+## 🚀 快速开始
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 开发模式
+
+```bash
+npm run dev
+```
+
+### 构建生产版本
+
+```bash
+npm run build
+```
+
+### 预览生产版本
+
+```bash
+npm run preview
+```
+
+## 📂 项目结构
+
+```
+src/
+├── components/          # React 组件
+│   ├── Game.tsx        # 主游戏逻辑
+│   ├── Grid.tsx        # 网格渲染
+│   ├── EntityLayer.tsx # 敌人和子弹渲染
+│   └── UI/             # UI 组件
+├── hooks/              # 自定义 Hooks
+│   └── useGameLoop.ts  # 游戏循环
+├── utils/              # 工具函数
+│   └── pathfinding.ts  # A* 寻路算法
+├── constants/          # 游戏配置
+│   └── gameConfig.ts   # 游戏平衡参数
+└── types/              # TypeScript 类型定义
+    └── index.ts
+```
+
+## 🎨 游戏特性
+
+- ✅ 动态路径生成和寻路
+- ✅ 多种防御塔类型
+- ✅ 精英敌人系统
+- ✅ 溅射伤害和减速效果
+- ✅ 响应式设计
+- ✅ 流畅的动画效果
+- ✅ 实时游戏状态显示
+
+## 📝 开发说明
+
+### ESLint 配置
+
+如果要在生产环境中使用，建议启用类型感知的 lint 规则：
 
 ```js
 export default defineConfig([
@@ -21,53 +152,30 @@ export default defineConfig([
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
       tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
+      // 或使用更严格的规则
       tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
     ],
     languageOptions: {
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
       },
-      // other options...
     },
   },
 ])
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🐛 已知问题
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- 游戏暂停功能待实现
+- 防御塔升级系统待开发
+- 音效和背景音乐待添加
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📄 许可证
+
+MIT License
