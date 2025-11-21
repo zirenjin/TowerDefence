@@ -40,23 +40,24 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 </div>
 
-                <div className="bg-gray-100 p-3 rounded-lg flex justify-between items-center">
-                    <div>
-                        <div className="text-xs text-gray-500 uppercase font-bold">Wave</div>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="text-xs text-gray-500 uppercase font-bold mb-2">Wave</div>
+                    <div className="flex items-center justify-between">
                         <div className="text-xl font-mono text-blue-600">{wave}</div>
+                        <button
+                            onClick={onNextWave}
+                            disabled={isWaveActive}
+                            className={clsx(
+                                "px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2",
+                                isWaveActive
+                                    ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                                    : "bg-blue-500 hover:bg-blue-600 text-white"
+                            )}
+                        >
+                            {isWaveActive ? <Pause size={16} /> : <Play size={16} />}
+                            {isWaveActive ? "In Progress" : "Start Wave"}
+                        </button>
                     </div>
-                    <button
-                        onClick={onNextWave}
-                        disabled={isWaveActive}
-                        className={clsx(
-                            "p-2 rounded-full transition-colors",
-                            isWaveActive
-                                ? "bg-gray-300 cursor-not-allowed"
-                                : "bg-blue-500 hover:bg-blue-600 text-white"
-                        )}
-                    >
-                        {isWaveActive ? <Pause size={20} /> : <Play size={20} />}
-                    </button>
                 </div>
             </div>
 

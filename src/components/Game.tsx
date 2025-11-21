@@ -29,7 +29,8 @@ const Game: React.FC = () => {
                 y,
                 isWall: false,
                 isStart: false,
-                isEnd: false
+                isEnd: false,
+                isPath: false
             }))
         );
         return grid;
@@ -57,6 +58,7 @@ const Game: React.FC = () => {
     const projectilesRef = useRef<Projectile[]>([]);
     const towersRef = useRef<Tower[]>([]);
     const gridRef = useRef<Cell[][]>([]); // Keep a ref for fast access in loop
+    const pathRef = useRef<Vector2[]>([]); // Store the fixed path
 
     // Wave management
     const waveStateRef = useRef({
@@ -75,7 +77,8 @@ const Game: React.FC = () => {
                 y,
                 isWall: false,
                 isStart: false,
-                isEnd: false
+                isEnd: false,
+                isPath: false
             }))
         );
 
@@ -98,7 +101,16 @@ const Game: React.FC = () => {
         newGrid[start.y][start.x].isStart = true;
         newGrid[end.y][end.x].isEnd = true;
 
+        // Generate Fixed Path
+        const fixedPath = findPath(newGrid, start, end);
+        if (fixedPath) {
+            fixedPath.forEach(pos => {
+                newGrid[pos.y][pos.x].isPath = true;
+            });
+        }
+
         gridRef.current = newGrid;
+        pathRef.current = fixedPath || []; // Store path in ref
         enemiesRef.current = [];
         projectilesRef.current = [];
         towersRef.current = [];
@@ -170,10 +182,14 @@ const Game: React.FC = () => {
 
     const spawnEnemy = () => {
         const start = getStartNode(gridRef.current);
-        const end = getEndNode(gridRef.current);
-        const path = findPath(gridRef.current, start, end);
 
-        if (!path) return;
+        // Use the pre-computed path from pathRef
+        const path = pathRef.current;
+
+        if (!path || path.length === 0) {
+            console.warn("Cannot spawn enemy: No path available");
+            return;
+        }
 
         const wave = gameState.wave;
         const hp = GAME_CONFIG.ENEMY_BASE_HP * (1 + wave * GAME_CONFIG.ENEMY_HP_INCREASE_PER_WAVE);

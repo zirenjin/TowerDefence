@@ -47,6 +47,7 @@ export interface Cell {
     isWall: boolean;
     isStart: boolean;
     isEnd: boolean;
+    isPath: boolean;
     towerId?: string;
 }
 
