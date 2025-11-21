@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { type Cell, GRID_SIZE, type Tower } from '../types';
 import clsx from 'clsx';
 
@@ -9,6 +9,13 @@ interface GridProps {
 }
 
 const Grid: React.FC<GridProps> = ({ grid, towers, onCellClick }) => {
+    // Optimize tower lookup with a Map
+    const towerMap = useMemo(() => {
+        const map = new Map<string, Tower>();
+        towers.forEach(t => map.set(`${t.position.x},${t.position.y}`, t));
+        return map;
+    }, [towers]);
+
     return (
         <div
             className="grid gap-px bg-gray-200 border border-gray-300 shadow-lg"
@@ -20,7 +27,7 @@ const Grid: React.FC<GridProps> = ({ grid, towers, onCellClick }) => {
         >
             {grid.map((row, y) => (
                 row.map((cell, x) => {
-                    const tower = towers.find(t => t.position.x === x && t.position.y === y);
+                    const tower = towerMap.get(`${x},${y}`);
 
                     return (
                         <div
@@ -37,9 +44,7 @@ const Grid: React.FC<GridProps> = ({ grid, towers, onCellClick }) => {
                                     "bg-purple-500": tower?.type === 'AREA',
                                 }
                             )}
-                        >
-                            {/* Render Tower Range on Hover? Maybe later. */}
-                        </div>
+                        />
                     );
                 })
             ))}

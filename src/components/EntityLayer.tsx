@@ -63,7 +63,10 @@ const EntityLayer: React.FC<EntityLayerProps> = ({ enemies, projectiles }) => {
         return () => {
             cancelAnimationFrame(animationFrameId);
         };
-    }, []); // Empty dependency array means this effect runs once on mount
+        // Empty dependency array is intentional - we want the render loop to run once
+        // and access enemies/projectiles via refs for better performance
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <canvas

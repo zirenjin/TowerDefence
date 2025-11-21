@@ -18,20 +18,20 @@ export interface Tower {
 
 export interface Enemy {
     id: string;
-    position: Vector2; // Grid coordinates (float for smooth movement)
-    targetIndex: number; // Index in the path array
+    position: Vector2;
+    targetIndex: number;
     hp: number;
     maxHp: number;
     speed: number;
     isSlowed: boolean;
     slowTimer: number;
-    path: Vector2[]; // Cache the path for each enemy
-    frozen: boolean; // If true, enemy stops moving (path blocked)
+    path: Vector2[];
+    frozen: boolean;
 }
 
 export interface Projectile {
     id: string;
-    position: Vector2; // Pixel/Canvas coordinates or Grid float coordinates? Let's use Grid float.
+    position: Vector2;
     targetId: string;
     damage: number;
     speed: number;
@@ -44,7 +44,7 @@ export interface Projectile {
 export interface Cell {
     x: number;
     y: number;
-    isWall: boolean; // True if a tower is placed here
+    isWall: boolean;
     isStart: boolean;
     isEnd: boolean;
     towerId?: string;
@@ -59,7 +59,7 @@ export interface GameState {
     towers: Tower[];
     enemies: Enemy[];
     projectiles: Projectile[];
-    path: Vector2[]; // The calculated path for the current grid state
+    path: Vector2[];
 }
 
 export const GRID_SIZE = 20;
