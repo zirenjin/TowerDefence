@@ -21,13 +21,27 @@ import {
 import { GAME_CONFIG, TOWER_STATS } from '../constants/gameConfig';
 
 const Game: React.FC = () => {
+    // Helper to create initial grid
+    const createInitialGrid = () => {
+        const grid = Array(GRID_SIZE).fill(null).map((_, y) =>
+            Array(GRID_SIZE).fill(null).map((_, x) => ({
+                x,
+                y,
+                isWall: false,
+                isStart: false,
+                isEnd: false
+            }))
+        );
+        return grid;
+    };
+
     // Game State
     const [gameState, setGameState] = useState<GameState>({
         money: GAME_CONFIG.INITIAL_MONEY,
         lives: GAME_CONFIG.INITIAL_LIVES,
         wave: 1,
         isPlaying: false,
-        grid: [],
+        grid: createInitialGrid(),
         towers: [],
         enemies: [],
         projectiles: [],
@@ -392,28 +406,28 @@ const Game: React.FC = () => {
             )}
             <div className="flex w-full h-full bg-gray-100">
                 <div className="flex-1 flex items-center justify-center relative">
-                <div className="relative">
-                    <Grid
-                        grid={gameState.grid}
-                        towers={gameState.towers}
-                        onCellClick={handleCellClick}
-                    />
-                    <EntityLayer
-                        enemies={enemiesRef}
-                        projectiles={projectilesRef}
-                    />
+                    <div className="relative">
+                        <Grid
+                            grid={gameState.grid}
+                            towers={gameState.towers}
+                            onCellClick={handleCellClick}
+                        />
+                        <EntityLayer
+                            enemies={enemiesRef}
+                            projectiles={projectilesRef}
+                        />
+                    </div>
                 </div>
-            </div>
-            <Sidebar
-                money={gameState.money}
-                lives={gameState.lives}
-                wave={gameState.wave}
-                selectedTower={selectedTower}
-                onSelectTower={setSelectedTower}
-                onNextWave={startNextWave}
-                isWaveActive={isWaveActive}
-                onReset={resetGame}
-            />
+                <Sidebar
+                    money={gameState.money}
+                    lives={gameState.lives}
+                    wave={gameState.wave}
+                    selectedTower={selectedTower}
+                    onSelectTower={setSelectedTower}
+                    onNextWave={startNextWave}
+                    isWaveActive={isWaveActive}
+                    onReset={resetGame}
+                />
             </div>
         </>
     );
