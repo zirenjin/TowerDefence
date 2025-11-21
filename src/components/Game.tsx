@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+
 import Grid from './Grid';
 import EntityLayer from './EntityLayer';
 import Sidebar from './UI/Sidebar';
+import Toast from './UI/Toast';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { findPath } from '../utils/pathfinding';
 import {
@@ -16,15 +18,13 @@ import {
     type Vector2,
     TOWER_COSTS
 } from '../types';
-
-const INITIAL_MONEY = 100;
-const INITIAL_LIVES = 20;
+import { GAME_CONFIG, TOWER_STATS } from '../constants/gameConfig';
 
 const Game: React.FC = () => {
     // Game State
     const [gameState, setGameState] = useState<GameState>({
-        money: INITIAL_MONEY,
-        lives: INITIAL_LIVES,
+        money: GAME_CONFIG.INITIAL_MONEY,
+        lives: GAME_CONFIG.INITIAL_LIVES,
         wave: 1,
         isPlaying: false,
         grid: [],
@@ -36,6 +36,7 @@ const Game: React.FC = () => {
 
     const [selectedTower, setSelectedTower] = useState<TowerType | null>(null);
     const [isWaveActive, setIsWaveActive] = useState(false);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     // Refs for mutable game state to avoid re-renders during game loop
     const enemiesRef = useRef<Enemy[]>([]);
@@ -51,11 +52,6 @@ const Game: React.FC = () => {
         spawnInterval: 1.0, // Seconds between spawns
         waveComplete: false
     });
-
-    // Initialize Game
-    useEffect(() => {
-        resetGame();
-    }, []);
 
     const resetGame = () => {
         // Generate Grid
@@ -78,10 +74,10 @@ const Game: React.FC = () => {
             edgeCells.push({ x: GRID_SIZE - 1, y: i });
         }
 
-        // Simple random selection (ensure they are not too close?)
+        // Simple random selection (ensure they are not too close)
         const start = edgeCells[Math.floor(Math.random() * edgeCells.length)];
         let end = edgeCells[Math.floor(Math.random() * edgeCells.length)];
-        while (Math.abs(start.x - end.x) + Math.abs(start.y - end.y) < 10) {
+        while (Math.abs(start.x - end.x) + Math.abs(start.y - end.y) < GAME_CONFIG.MIN_PATH_DISTANCE) {
             end = edgeCells[Math.floor(Math.random() * edgeCells.length)];
         }
 
@@ -96,13 +92,13 @@ const Game: React.FC = () => {
             enemiesSpawned: 0,
             enemiesToSpawn: 0,
             spawnTimer: 0,
-            spawnInterval: 1.0,
+            spawnInterval: GAME_CONFIG.INITIAL_SPAWN_INTERVAL,
             waveComplete: false
         };
 
         setGameState({
-            money: INITIAL_MONEY,
-            lives: INITIAL_LIVES,
+            money: GAME_CONFIG.INITIAL_MONEY,
+            lives: GAME_CONFIG.INITIAL_LIVES,
             wave: 1,
             isPlaying: false,
             grid: newGrid,
@@ -114,17 +110,25 @@ const Game: React.FC = () => {
         setIsWaveActive(false);
     };
 
+    // Initialize Game on mount
+    useEffect(() => {
+        resetGame();
+    }, []);
+
     const startNextWave = () => {
         if (isWaveActive) return;
 
         const wave = gameState.wave;
-        const count = 10 + wave * 2;
+        const count = GAME_CONFIG.INITIAL_WAVE_ENEMIES + wave * GAME_CONFIG.ENEMIES_PER_WAVE_INCREASE;
 
         waveStateRef.current = {
             enemiesSpawned: 0,
             enemiesToSpawn: count,
             spawnTimer: 0,
-            spawnInterval: Math.max(0.2, 1.0 - wave * 0.05), // Faster spawns later
+            spawnInterval: Math.max(
+                GAME_CONFIG.MIN_SPAWN_INTERVAL,
+                GAME_CONFIG.INITIAL_SPAWN_INTERVAL - wave * GAME_CONFIG.SPAWN_INTERVAL_DECREASE
+            ),
             waveComplete: false
         };
 
@@ -150,6 +154,30 @@ const Game: React.FC = () => {
         return { x: GRID_SIZE - 1, y: GRID_SIZE - 1 }; // Should not happen
     };
 
+    const spawnEnemy = () => {
+        const start = getStartNode(gridRef.current);
+        const end = getEndNode(gridRef.current);
+        const path = findPath(gridRef.current, start, end);
+
+        if (!path) return;
+
+        const wave = gameState.wave;
+        const hp = GAME_CONFIG.ENEMY_BASE_HP * (1 + wave * GAME_CONFIG.ENEMY_HP_INCREASE_PER_WAVE);
+
+        enemiesRef.current.push({
+            id: uuidv4(),
+            position: { ...start },
+            targetIndex: 0,
+            hp: hp,
+            maxHp: hp,
+            speed: GAME_CONFIG.ENEMY_BASE_SPEED,
+            isSlowed: false,
+            slowTimer: 0,
+            path: path,
+            frozen: false
+        });
+    };
+
     // Game Loop
     useGameLoop((deltaTime) => {
         if (!gameState.isPlaying) return;
@@ -169,16 +197,13 @@ const Game: React.FC = () => {
         }
 
         // 2. Update Enemies
-        // const startNode = getStartNode(gridRef.current);
-        // const endNode = getEndNode(gridRef.current);
-
         enemiesRef.current.forEach(enemy => {
             // Apply Slow
             if (enemy.isSlowed) {
                 enemy.slowTimer -= deltaTime;
                 if (enemy.slowTimer <= 0) {
                     enemy.isSlowed = false;
-                    enemy.speed = 2.0; // Reset speed
+                    enemy.speed = GAME_CONFIG.ENEMY_BASE_SPEED;
                 }
             }
 
@@ -209,10 +234,6 @@ const Game: React.FC = () => {
                     enemy.position.x += (dx / dist) * moveDist;
                     enemy.position.y += (dy / dist) * moveDist;
                 }
-            } else {
-                // No path? Try to find one if not frozen
-                // This happens if path was blocked and then unblocked, or if just spawned
-                // But we calculate path on spawn.
             }
         });
 
@@ -232,17 +253,17 @@ const Game: React.FC = () => {
 
                 if (target) {
                     tower.lastFired = 0;
-                    // Spawn Projectile
+                    const towerStats = TOWER_STATS[tower.type];
                     projectilesRef.current.push({
                         id: uuidv4(),
                         position: { ...tower.position },
                         targetId: target.id,
                         damage: tower.damage,
-                        speed: 10, // Projectile speed
+                        speed: GAME_CONFIG.PROJECTILE_SPEED,
                         type: tower.type,
-                        splashRadius: tower.type === 'AREA' ? 2.5 : 0,
-                        slowFactor: tower.type === 'SLOW' ? 0.6 : 1,
-                        slowDuration: tower.type === 'SLOW' ? 1.5 : 0
+                        splashRadius: towerStats.splashRadius || 0,
+                        slowFactor: towerStats.slowFactor || 1,
+                        slowDuration: towerStats.slowDuration || 0
                     });
                 }
             }
@@ -280,13 +301,13 @@ const Game: React.FC = () => {
                     if (proj.type === 'SLOW') {
                         target.isSlowed = true;
                         target.slowTimer = proj.slowDuration || 0;
-                        target.speed = 2.0 * (proj.slowFactor || 1);
+                        target.speed = GAME_CONFIG.ENEMY_BASE_SPEED * (proj.slowFactor || 1);
                     }
                 }
 
                 // Add money if killed
                 if (target.hp <= 0) {
-                    setGameState(prev => ({ ...prev, money: prev.money + 10 })); // Reward
+                    setGameState(prev => ({ ...prev, money: prev.money + GAME_CONFIG.ENEMY_KILL_REWARD }));
                 }
 
                 proj.damage = 0; // Mark for removal
@@ -297,38 +318,7 @@ const Game: React.FC = () => {
         });
 
         projectilesRef.current = projectilesRef.current.filter(p => p.damage > 0);
-
-        // Trigger re-render for UI stats if needed (throttled?)
-        // Actually, we only need to update money/lives in React state.
-        // We are doing that inside the loop which might be too frequent.
-        // Optimally, we should use refs for money/lives too and only sync to state periodically or on change.
-        // But for now, let's rely on React batching or just accept it.
-
     }, gameState.isPlaying);
-
-    const spawnEnemy = () => {
-        const start = getStartNode(gridRef.current);
-        const end = getEndNode(gridRef.current);
-        const path = findPath(gridRef.current, start, end);
-
-        if (!path) return; // Should not happen if we prevent blocking
-
-        const wave = gameState.wave;
-        const hp = 100 * (1 + wave * 0.2);
-
-        enemiesRef.current.push({
-            id: uuidv4(),
-            position: { ...start },
-            targetIndex: 0,
-            hp: hp,
-            maxHp: hp,
-            speed: 2.0,
-            isSlowed: false,
-            slowTimer: 0,
-            path: path,
-            frozen: false
-        });
-    };
 
     const handleCellClick = (x: number, y: number) => {
         if (!selectedTower) return;
@@ -349,7 +339,7 @@ const Game: React.FC = () => {
         if (!newPath) {
             // Blocked! Revert
             gridRef.current[y][x].isWall = false;
-            alert("Cannot block the path!");
+            setToastMessage("Cannot block the path!");
             return;
         }
 
@@ -358,31 +348,28 @@ const Game: React.FC = () => {
         setGameState(prev => ({ ...prev, money: prev.money - cost }));
 
         // 2. Add Tower
+        const towerStats = TOWER_STATS[selectedTower];
         const newTower: Tower = {
             id: uuidv4(),
             type: selectedTower,
             position: { x, y },
-            range: selectedTower === 'PRIMARY' ? 5 : selectedTower === 'SLOW' ? 4 : 3,
-            damage: selectedTower === 'PRIMARY' ? 20 : selectedTower === 'SLOW' ? 5 : 15,
-            fireRate: selectedTower === 'PRIMARY' ? 0.5 : selectedTower === 'SLOW' ? 1.0 : 1.5,
+            range: towerStats.range,
+            damage: towerStats.damage,
+            fireRate: towerStats.fireRate,
             lastFired: 0,
             cost: cost
         };
         towersRef.current.push(newTower);
 
-        // 3. Update Grid State (for rendering)
-        // We need to update the React state grid as well to show the tower
+        // 3. Update Grid State
         const newGridState = [...gridRef.current.map(row => [...row])];
         newGridState[y][x].isWall = true;
         newGridState[y][x].towerId = newTower.id;
-        gridRef.current = newGridState; // Keep ref in sync
+        gridRef.current = newGridState;
         setGameState(prev => ({ ...prev, grid: newGridState, towers: [...towersRef.current] }));
 
         // 4. Recalculate paths for all existing enemies
         enemiesRef.current.forEach(enemy => {
-            // Find path from current position to end
-            // We need to approximate current position to nearest cell?
-            // Or just use current float position? A* needs integer grid start.
             const currentGridPos = {
                 x: Math.round(enemy.position.x),
                 y: Math.round(enemy.position.y)
@@ -396,8 +383,15 @@ const Game: React.FC = () => {
     };
 
     return (
-        <div className="flex w-full h-full bg-gray-100">
-            <div className="flex-1 flex items-center justify-center relative">
+        <>
+            {toastMessage && (
+                <Toast
+                    message={toastMessage}
+                    onClose={() => setToastMessage(null)}
+                />
+            )}
+            <div className="flex w-full h-full bg-gray-100">
+                <div className="flex-1 flex items-center justify-center relative">
                 <div className="relative">
                     <Grid
                         grid={gameState.grid}
@@ -420,7 +414,8 @@ const Game: React.FC = () => {
                 isWaveActive={isWaveActive}
                 onReset={resetGame}
             />
-        </div>
+            </div>
+        </>
     );
 };
 
