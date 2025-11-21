@@ -133,6 +133,7 @@ const Game: React.FC = () => {
             lives: GAME_CONFIG.INITIAL_LIVES,
             wave: 1,
             isPlaying: false,
+            isGameOver: false,
             grid: newGrid,
             towers: [],
             enemies: [],
