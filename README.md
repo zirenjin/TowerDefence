@@ -170,7 +170,6 @@ export default defineConfig([
 
 - Game pause functionality to be implemented
 - Tower upgrade system to be developed
-- Sound effects and background music to be added
 
 ## 🤝 Contributing
 
