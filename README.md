@@ -1,150 +1,150 @@
-# 塔防游戏 (Tower Defence)
+# Tower Defence Game
 
-一个使用 React + TypeScript + Vite 构建的经典塔防游戏。
+A classic tower defense game built with React + TypeScript + Vite.
 
-## 🎮 游戏简介
+## 🎮 Game Overview
 
-这是一款策略性塔防游戏，玩家需要在网格地图上放置不同类型的防御塔，阻止敌人从起点到达终点。合理规划防御塔的位置和类型，击败一波又一波的敌人！
+This is a strategic tower defense game where players must place different types of defense towers on a grid map to prevent enemies from reaching their destination. Plan your tower placements and types wisely to defeat wave after wave of enemies!
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-- **React 18** - UI 框架
-- **TypeScript** - 类型安全
-- **Vite** - 快速开发构建工具
-- **Tailwind CSS** - 样式框架
-- **UUID** - 唯一标识符生成
+- **React 18** - UI Framework
+- **TypeScript** - Type Safety
+- **Vite** - Fast Development Build Tool
+- **Tailwind CSS** - Styling Framework
+- **UUID** - Unique Identifier Generation
 
-## 📋 游戏规则
+## 📋 Game Rules
 
-### 基础规则
+### Basic Rules
 
-- **初始金钱**: 100 金币
-- **初始生命**: 20 点
-- **网格大小**: 20×20
-- **游戏目标**: 在生命值耗尽前存活尽可能多的波次
+- **Initial Money**: 100 coins
+- **Initial Lives**: 20 points
+- **Grid Size**: 20×20
+- **Game Objective**: Survive as many waves as possible before running out of lives
 
-### 游戏机制
+### Game Mechanics
 
-1. **路径系统**
-   - 每局游戏随机生成起点和终点
-   - 敌人沿固定路径移动
-   - 放置防御塔会动态重新计算路径
-   - **注意**: 不能阻断敌人的路径！
+1. **Path System**
+   - Start and end points are randomly generated each game
+   - Enemies follow a fixed path
+   - Placing towers dynamically recalculates the path
+   - **Important**: You cannot block the enemy path completely!
 
-2. **波次系统**
-   - 第一波: 3 个敌人
-   - 每波增加: 2 个敌人
-   - 生成间隔: 从 0.5 秒逐渐递减至最低 0.2 秒
-   - 击败所有敌人后可以开始下一波
+2. **Wave System**
+   - First wave: 3 enemies
+   - Each wave increases by: 2 enemies
+   - Spawn interval: Decreases from 0.5 seconds to minimum 0.2 seconds
+   - Start the next wave after defeating all enemies
 
-3. **敌人属性**
-   - **基础生命值**: 100 HP
-   - **生命值增长**: 每波增加 15%
-   - **移动速度**: 1.5 单位/秒
-   - **击杀奖励**: 20 金币
-   - **精英敌人**: 20% 概率生成，生命值大幅提升
+3. **Enemy Properties**
+   - **Base Health**: 100 HP
+   - **Health Growth**: Increases by 15% per wave
+   - **Movement Speed**: 1.5 units/second
+   - **Kill Reward**: 20 coins
+   - **Elite Enemies**: 20% chance to spawn with significantly increased health
 
-4. **失败条件**
-   - 当生命值降至 0 时游戏结束
-   - 每个敌人到达终点会扣除 1 点生命
+4. **Loss Condition**
+   - Game ends when lives reach 0
+   - Each enemy reaching the destination costs 1 life point
 
-## 🏰 防御塔类型
+## 🏰 Tower Types
 
-### 1. 基础塔 (PRIMARY)
-- **成本**: 50 金币
-- **射程**: 5 格
-- **伤害**: 20
-- **攻击速度**: 0.5 秒/次
-- **特点**: 性价比高，适合初期防御
+### 1. Primary Tower
+- **Cost**: 50 coins
+- **Range**: 5 tiles
+- **Damage**: 20
+- **Fire Rate**: 0.5 seconds/shot
+- **Features**: High cost-effectiveness, suitable for early defense
 
-### 2. 减速塔 (SLOW)
-- **成本**: 100 金币
-- **射程**: 4 格
-- **伤害**: 5
-- **攻击速度**: 1.0 秒/次
-- **特殊效果**: 减速 60%，持续 1.5 秒
-- **特点**: 延缓敌人速度，配合其他塔使用
+### 2. Slow Tower
+- **Cost**: 100 coins
+- **Range**: 4 tiles
+- **Damage**: 5
+- **Fire Rate**: 1.0 seconds/shot
+- **Special Effect**: Slows by 60%, lasts 1.5 seconds
+- **Features**: Delays enemy speed, use in combination with other towers
 
-### 3. 范围塔 (AREA)
-- **成本**: 150 金币
-- **射程**: 3 格
-- **伤害**: 15
-- **攻击速度**: 1.5 秒/次
-- **溅射范围**: 2.5 格
-- **特点**: 群体伤害，适合对付成群敌人
+### 3. Area Tower
+- **Cost**: 150 coins
+- **Range**: 3 tiles
+- **Damage**: 15
+- **Fire Rate**: 1.5 seconds/shot
+- **Splash Radius**: 2.5 tiles
+- **Features**: Area damage, effective against groups of enemies
 
-### 4. 墙 (WALL)
-- **成本**: 5 金币
-- **特点**: 无攻击能力，用于改变敌人路径，引导敌人走更长的路线
+### 4. Wall
+- **Cost**: 5 coins
+- **Features**: No attack capability, used to alter enemy path and guide enemies along longer routes
 
-## 🎯 游戏策略提示
+## 🎯 Strategy Tips
 
-1. **合理规划路径**: 使用墙体延长敌人的行进路径
-2. **防御塔组合**: 混合使用不同类型的防御塔效果更佳
-3. **优先升级**: 在关键位置放置高伤害防御塔
-4. **经济管理**: 平衡当前防御需求和未来发展
-5. **减速控制**: 减速塔能为其他防御塔争取更多输出时间
+1. **Plan Your Path**: Use walls to extend enemy travel distance
+2. **Tower Combination**: Mix different tower types for better effectiveness
+3. **Priority Placement**: Place high-damage towers at key positions
+4. **Economy Management**: Balance current defense needs with future development
+5. **Slow Control**: Slow towers buy more time for other towers to deal damage
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 安装依赖
+### Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 开发模式
+### Development Mode
 
 ```bash
 npm run dev
 ```
 
-### 构建生产版本
+### Build for Production
 
 ```bash
 npm run build
 ```
 
-### 预览生产版本
+### Preview Production Build
 
 ```bash
 npm run preview
 ```
 
-## 📂 项目结构
+## 📂 Project Structure
 
 ```
 src/
-├── components/          # React 组件
-│   ├── Game.tsx        # 主游戏逻辑
-│   ├── Grid.tsx        # 网格渲染
-│   ├── EntityLayer.tsx # 敌人和子弹渲染
-│   └── UI/             # UI 组件
-├── hooks/              # 自定义 Hooks
-│   └── useGameLoop.ts  # 游戏循环
-├── utils/              # 工具函数
-│   └── pathfinding.ts  # A* 寻路算法
-├── constants/          # 游戏配置
-│   └── gameConfig.ts   # 游戏平衡参数
-└── types/              # TypeScript 类型定义
+├── components/          # React components
+│   ├── Game.tsx        # Main game logic
+│   ├── Grid.tsx        # Grid rendering
+│   ├── EntityLayer.tsx # Enemy and projectile rendering
+│   └── UI/             # UI components
+├── hooks/              # Custom Hooks
+│   └── useGameLoop.ts  # Game loop
+├── utils/              # Utility functions
+│   └── pathfinding.ts  # A* pathfinding algorithm
+├── constants/          # Game configuration
+│   └── gameConfig.ts   # Game balance parameters
+└── types/              # TypeScript type definitions
     └── index.ts
 ```
 
-## 🎨 游戏特性
+## 🎨 Game Features
 
-- ✅ 动态路径生成和寻路
-- ✅ 多种防御塔类型
-- ✅ 精英敌人系统
-- ✅ 溅射伤害和减速效果
-- ✅ 响应式设计
-- ✅ 流畅的动画效果
-- ✅ 实时游戏状态显示
+- ✅ Dynamic path generation and pathfinding
+- ✅ Multiple tower types
+- ✅ Elite enemy system
+- ✅ Splash damage and slow effects
+- ✅ Responsive design
+- ✅ Smooth animations
+- ✅ Real-time game state display
 
-## 📝 开发说明
+## 📝 Development Notes
 
-### ESLint 配置
+### ESLint Configuration
 
-如果要在生产环境中使用，建议启用类型感知的 lint 规则：
+For production applications, it's recommended to enable type-aware lint rules:
 
 ```js
 export default defineConfig([
@@ -153,7 +153,7 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
     extends: [
       tseslint.configs.recommendedTypeChecked,
-      // 或使用更严格的规则
+      // Or use stricter rules
       tseslint.configs.strictTypeChecked,
     ],
     languageOptions: {
@@ -166,16 +166,16 @@ export default defineConfig([
 ])
 ```
 
-## 🐛 已知问题
+## 🐛 Known Issues
 
-- 游戏暂停功能待实现
-- 防御塔升级系统待开发
-- 音效和背景音乐待添加
+- Game pause functionality to be implemented
+- Tower upgrade system to be developed
+- Sound effects and background music to be added
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 📄 许可证
+## 📄 License
 
 MIT License
