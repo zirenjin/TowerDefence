@@ -27,12 +27,12 @@ const EntityLayer: React.FC<EntityLayerProps> = ({ enemies, projectiles }) => {
 
             // Draw Enemies
             enemies.current.forEach(enemy => {
-                ctx.fillStyle = '#333'; // Dark grey for enemies
+                ctx.fillStyle = enemy.isElite ? '#8B0000' : '#333'; // Dark red for elite, dark grey for normal
                 ctx.beginPath();
                 // Draw circle for enemy
                 const x = enemy.position.x * cellSize + cellSize / 2;
                 const y = enemy.position.y * cellSize + cellSize / 2;
-                const radius = cellSize * 0.3;
+                const radius = enemy.isElite ? cellSize * 0.4 : cellSize * 0.3;
 
                 ctx.arc(x, y, radius, 0, Math.PI * 2);
                 ctx.fill();

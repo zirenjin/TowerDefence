@@ -37,12 +37,13 @@ const Grid: React.FC<GridProps> = ({ grid, towers, onCellClick }) => {
                                 "w-full h-full transition-colors duration-200 cursor-pointer relative",
                                 {
                                     "bg-white hover:bg-gray-50": !cell.isWall && !cell.isStart && !cell.isEnd && !cell.isPath,
-                                    "bg-amber-200": cell.isPath && !cell.isStart && !cell.isEnd,
+                                    "bg-red-100": cell.isPath && !cell.isStart && !cell.isEnd,
                                     "bg-gray-800": cell.isStart,
                                     "bg-red-500": cell.isEnd,
                                     "bg-blue-500": tower?.type === 'PRIMARY',
                                     "bg-green-500": tower?.type === 'SLOW',
                                     "bg-purple-500": tower?.type === 'AREA',
+                                    "bg-gray-600": tower?.type === 'WALL',
                                 }
                             )}
                         />

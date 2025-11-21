@@ -7,17 +7,17 @@ export const GAME_CONFIG = {
     INITIAL_LIVES: 20,
 
     // Wave Settings
-    INITIAL_WAVE_ENEMIES: 10,
+    INITIAL_WAVE_ENEMIES: 3,
     ENEMIES_PER_WAVE_INCREASE: 2,
-    INITIAL_SPAWN_INTERVAL: 1.0, // seconds
+    INITIAL_SPAWN_INTERVAL: 0.5, // seconds
     MIN_SPAWN_INTERVAL: 0.2, // seconds
     SPAWN_INTERVAL_DECREASE: 0.05, // per wave
 
     // Enemy Settings
     ENEMY_BASE_HP: 100,
-    ENEMY_HP_INCREASE_PER_WAVE: 0.2, // multiplier
-    ENEMY_BASE_SPEED: 2.0,
-    ENEMY_KILL_REWARD: 10,
+    ENEMY_HP_INCREASE_PER_WAVE: 0.15, // multiplier (Reduced from 0.2)
+    ENEMY_BASE_SPEED: 1.5, // (Reduced from 2.0)
+    ENEMY_KILL_REWARD: 20,
 
     // Projectile Settings
     PROJECTILE_SPEED: 10,
@@ -52,5 +52,10 @@ export const TOWER_STATS: Record<TowerType, {
         damage: 15,
         fireRate: 1.5,
         splashRadius: 2.5,
+    },
+    WALL: {
+        range: 0,
+        damage: 0,
+        fireRate: 0,
     },
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { type TowerType, TOWER_COSTS } from '../../types';
-import { Shield, Zap, Hexagon, Play, Pause, RefreshCw } from 'lucide-react';
+import { Shield, Zap, Hexagon, Play, Pause, RefreshCw, Square } from 'lucide-react';
 import clsx from 'clsx';
 
 interface SidebarProps {
@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onReset
 }) => {
     return (
-        <div className="w-64 bg-white p-6 shadow-xl flex flex-col gap-6 h-[600px] border-l border-gray-200">
+        <div className="w-64 bg-white p-6 shadow-xl flex flex-col gap-6 h-full border-l border-gray-200 overflow-y-auto">
             <div className="space-y-4">
                 <h1 className="text-2xl font-bold text-gray-800">Tower Defense</h1>
 
@@ -93,6 +93,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                         isSelected={selectedTower === 'AREA'}
                         onClick={() => onSelectTower(selectedTower === 'AREA' ? null : 'AREA')}
                         canAfford={money >= TOWER_COSTS.AREA}
+                    />
+                    <TowerButton
+                        type="WALL"
+                        icon={<Square size={20} />}
+                        label="Wall"
+                        cost={TOWER_COSTS.WALL}
+                        color="bg-gray-600"
+                        isSelected={selectedTower === 'WALL'}
+                        onClick={() => onSelectTower(selectedTower === 'WALL' ? null : 'WALL')}
+                        canAfford={money >= TOWER_COSTS.WALL}
                     />
                 </div>
             </div>

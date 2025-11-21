@@ -1,0 +1,93 @@
+diff --git a/src/components/Game.tsx b/src/components/Game.tsx
+index original..fixed 100644
+--- a/src/components/Game.tsx
++++ b/src/components/Game.tsx
+@@ -28,7 +28,8 @@ const Game: React.FC = () => {
+                 y,
+                 isWall: false,
+                 isStart: false,
+-                isEnd: false
++                isEnd: false,
++                isPath: false
+             }))
+         );
+         return grid;
+@@ -56,6 +57,7 @@ const Game: React.FC = () => {
+     const projectilesRef = useRef<Projectile[]>([]);
+     const towersRef = useRef<Tower[]>([]);
+     const gridRef = useRef<Cell[][]>([]); // Keep a ref for fast access in loop
++    const pathRef = useRef<Vector2[]>([]); // Store the fixed path
+ 
+     // Wave management
+     const waveStateRef = useRef({
+@@ -73,7 +75,8 @@ const Game: React.FC = () => {
+                 y,
+                 isWall: false,
+                 isStart: false,
+-                isEnd: false
++                isEnd: false,
++                isPath: false
+             }))
+         );
+ 
+@@ -95,7 +98,16 @@ const Game: React.FC = () => {
+         newGrid[start.y][start.x].isStart = true;
+         newGrid[end.y][end.x].isEnd = true;
+ 
++        // Generate Fixed Path
++        const fixedPath = findPath(newGrid, start, end);
++        if (fixedPath) {
++            fixedPath.forEach(pos => {
++                newGrid[pos.y][pos.x].isPath = true;
++            });
++        }
++
+         gridRef.current = newGrid;
++        pathRef.current = fixedPath || []; // Store path in ref
+         enemiesRef.current = [];
+         projectilesRef.current = [];
+         towersRef.current = [];
+@@ -114,7 +126,7 @@ const Game: React.FC = () => {
+             towers: [],
+             enemies: [],
+             projectiles: [],
+-            path: []
++            path: fixedPath || []
+         });
+         setIsWaveActive(false);
+     };
+@@ -168,11 +180,12 @@ const Game: React.FC = () => {
+ 
+     const spawnEnemy = () => {
+         const start = getStartNode(gridRef.current);
+-        const end = getEndNode(gridRef.current);
+-        const path = findPath(gridRef.current, start, end);
++        
++        // Use the pre-computed path from pathRef
++        const path = pathRef.current;
+ 
+-        if (!path) return;
+-
++        if (!path || path.length === 0) {
++            console.warn("Cannot spawn enemy: No path available");
++            return;
++        }
++
+         const wave = gameState.wave;
+         const hp = GAME_CONFIG.ENEMY_BASE_HP * (1 + wave * GAME_CONFIG.ENEMY_HP_INCREASE_PER_WAVE);
+ 
+@@ -337,7 +350,13 @@ const Game: React.FC = () => {
+         if (!selectedTower) return;
+ 
+         const cell = gridRef.current[y][x];
+-        if (cell.isWall || cell.isStart || cell.isEnd || cell.towerId) return;
++        // Prevent placement on Wall, Start, End, Existing Tower, OR PATH
++        if (cell.isWall || cell.isStart || cell.isEnd || cell.towerId || cell.isPath) {
++            if (cell.isPath && !cell.isStart && !cell.isEnd) {
++                setToastMessage("Cannot place tower on the path!");
++            }
++            return;
++        }
+ 
+         const cost = TOWER_COSTS[selectedTower];
+         if (gameState.money < cost) return;

@@ -42,6 +42,7 @@ const Game: React.FC = () => {
         lives: GAME_CONFIG.INITIAL_LIVES,
         wave: 1,
         isPlaying: false,
+        isGameOver: false,
         grid: createInitialGrid(),
         towers: [],
         enemies: [],
@@ -82,20 +83,25 @@ const Game: React.FC = () => {
             }))
         );
 
-        // Random Start and End on edges
-        const edgeCells = [];
-        for (let i = 0; i < GRID_SIZE; i++) {
-            edgeCells.push({ x: i, y: 0 });
-            edgeCells.push({ x: i, y: GRID_SIZE - 1 });
-            edgeCells.push({ x: 0, y: i });
-            edgeCells.push({ x: GRID_SIZE - 1, y: i });
+        // Random Start and End on "inner" edges (at least 1 cell away from border)
+        const innerEdgeCells = [];
+        // Top and Bottom inner edges (y=1 and y=GRID_SIZE-2)
+        for (let x = 1; x < GRID_SIZE - 1; x++) {
+            innerEdgeCells.push({ x: x, y: 1 });
+            innerEdgeCells.push({ x: x, y: GRID_SIZE - 2 });
+        }
+        // Left and Right inner edges (x=1 and x=GRID_SIZE-2)
+        for (let y = 1; y < GRID_SIZE - 1; y++) {
+            innerEdgeCells.push({ x: 1, y: y });
+            innerEdgeCells.push({ x: GRID_SIZE - 2, y: y });
         }
 
         // Simple random selection (ensure they are not too close)
-        const start = edgeCells[Math.floor(Math.random() * edgeCells.length)];
-        let end = edgeCells[Math.floor(Math.random() * edgeCells.length)];
+        // Simple random selection (ensure they are not too close)
+        const start = innerEdgeCells[Math.floor(Math.random() * innerEdgeCells.length)];
+        let end = innerEdgeCells[Math.floor(Math.random() * innerEdgeCells.length)];
         while (Math.abs(start.x - end.x) + Math.abs(start.y - end.y) < GAME_CONFIG.MIN_PATH_DISTANCE) {
-            end = edgeCells[Math.floor(Math.random() * edgeCells.length)];
+            end = innerEdgeCells[Math.floor(Math.random() * innerEdgeCells.length)];
         }
 
         newGrid[start.y][start.x].isStart = true;
@@ -192,7 +198,22 @@ const Game: React.FC = () => {
         }
 
         const wave = gameState.wave;
-        const hp = GAME_CONFIG.ENEMY_BASE_HP * (1 + wave * GAME_CONFIG.ENEMY_HP_INCREASE_PER_WAVE);
+        let hp = GAME_CONFIG.ENEMY_BASE_HP * (1 + wave * GAME_CONFIG.ENEMY_HP_INCREASE_PER_WAVE);
+        let isElite = false;
+
+        // Dynamic Scaling: Elite Enemies
+        // Calculate Total Tower DPS
+        const totalTowerDPS = towersRef.current.reduce((total, tower) => {
+            return total + (tower.damage * tower.fireRate);
+        }, 0);
+
+        // 20% chance to spawn an Elite enemy if there is some defense
+        if (totalTowerDPS > 0 && Math.random() < 0.2) {
+            isElite = true;
+            // Elite HP = Normal HP + (Total DPS * 4)
+            // This ensures the enemy can survive ~4 seconds of focused fire from all towers
+            hp += totalTowerDPS * 4;
+        }
 
         enemiesRef.current.push({
             id: uuidv4(),
@@ -204,7 +225,8 @@ const Game: React.FC = () => {
             isSlowed: false,
             slowTimer: 0,
             path: path,
-            frozen: false
+            frozen: false,
+            isElite: isElite
         });
     };
 
@@ -303,8 +325,6 @@ const Game: React.FC = () => {
         projectilesRef.current.forEach(proj => {
             const target = enemiesRef.current.find(e => e.id === proj.targetId);
             if (!target) {
-                // Target dead, remove projectile or move to last known position?
-                // Simple: remove projectile
                 proj.damage = 0; // Mark for removal
                 return;
             }
@@ -346,6 +366,13 @@ const Game: React.FC = () => {
                 proj.position.y += (dy / dist) * moveDist;
             }
         });
+
+        // Check Game Over
+        if (gameState.lives <= 0 && !gameState.isGameOver) {
+            setGameState(prev => ({ ...prev, isPlaying: false, isGameOver: true }));
+            setIsWaveActive(false);
+            return;
+        }
 
         projectilesRef.current = projectilesRef.current.filter(p => p.damage > 0);
     }, gameState.isPlaying);
@@ -399,7 +426,23 @@ const Game: React.FC = () => {
         const newGridState = [...gridRef.current.map(row => [...row])];
         newGridState[y][x].isWall = true;
         newGridState[y][x].towerId = newTower.id;
+
+        // Update path visualization
+        // Clear old path
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                newGridState[r][c].isPath = false;
+            }
+        }
+        // Set new path
+        if (newPath) {
+            newPath.forEach(pos => {
+                newGridState[pos.y][pos.x].isPath = true;
+            });
+        }
+
         gridRef.current = newGridState;
+        pathRef.current = newPath; // Update global path for new enemies
         setGameState(prev => ({ ...prev, grid: newGridState, towers: [...towersRef.current] }));
 
         // 4. Recalculate paths for all existing enemies
@@ -436,6 +479,18 @@ const Game: React.FC = () => {
                             enemies={enemiesRef}
                             projectiles={projectilesRef}
                         />
+                        {gameState.isGameOver && (
+                            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-50 rounded-lg">
+                                <h2 className="text-4xl font-bold text-red-500 mb-4">GAME OVER</h2>
+                                <p className="text-white mb-6">You survived {gameState.wave - 1} waves</p>
+                                <button
+                                    onClick={resetGame}
+                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold transition-colors"
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <Sidebar

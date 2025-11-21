@@ -3,7 +3,7 @@ export type Vector2 = {
     y: number;
 };
 
-export type TowerType = 'PRIMARY' | 'SLOW' | 'AREA';
+export type TowerType = 'PRIMARY' | 'SLOW' | 'AREA' | 'WALL';
 
 export interface Tower {
     id: string;
@@ -27,6 +27,7 @@ export interface Enemy {
     slowTimer: number;
     path: Vector2[];
     frozen: boolean;
+    isElite?: boolean;
 }
 
 export interface Projectile {
@@ -56,6 +57,7 @@ export interface GameState {
     lives: number;
     wave: number;
     isPlaying: boolean;
+    isGameOver: boolean;
     grid: Cell[][];
     towers: Tower[];
     enemies: Enemy[];
@@ -68,4 +70,5 @@ export const TOWER_COSTS: Record<TowerType, number> = {
     PRIMARY: 50,
     SLOW: 100,
     AREA: 150,
+    WALL: 5,
 };
