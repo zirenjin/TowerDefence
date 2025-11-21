@@ -6,6 +6,13 @@ const heuristic = (a: Vector2, b: Vector2): number => {
 };
 
 export const findPath = (grid: Cell[][], start: Vector2, end: Vector2): Vector2[] | null => {
+    // console.log(`Finding path from (${start.x},${start.y}) to (${end.x},${end.y})`);
+
+    if (!grid || grid.length === 0) {
+        console.error("Grid is empty or undefined");
+        return null;
+    }
+
     const openSet: Vector2[] = [start];
     const cameFrom: Record<string, Vector2> = {};
 
@@ -17,7 +24,14 @@ export const findPath = (grid: Cell[][], start: Vector2, end: Vector2): Vector2[
     gScore[key(start)] = 0;
     fScore[key(start)] = heuristic(start, end);
 
+    let iterations = 0;
     while (openSet.length > 0) {
+        iterations++;
+        if (iterations > 10000) {
+            console.error("Pathfinding infinite loop detected");
+            return null;
+        }
+
         // Get node with lowest fScore
         let current = openSet[0];
         let lowestF = fScore[key(current)] || Infinity;
@@ -58,9 +72,6 @@ export const findPath = (grid: Cell[][], start: Vector2, end: Vector2): Vector2[
             }
 
             // Check obstacles (Towers)
-            // Note: We don't treat start/end as obstacles even if they have special flags, 
-            // but we must ensure we don't place towers on them anyway.
-            // The grid cell `isWall` determines if it's blocked.
             if (grid[neighbor.y][neighbor.x].isWall) {
                 continue;
             }
@@ -79,6 +90,6 @@ export const findPath = (grid: Cell[][], start: Vector2, end: Vector2): Vector2[
         }
     }
 
-    // No path found
+    console.warn("No path found");
     return null;
 };

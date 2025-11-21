@@ -348,9 +348,13 @@ const Game: React.FC = () => {
         gridRef.current[y][x].isWall = true;
         const start = getStartNode(gridRef.current);
         const end = getEndNode(gridRef.current);
+
+        // console.log("Checking path blocking:", { start, end, placement: {x, y} });
+
         const newPath = findPath(gridRef.current, start, end);
 
         if (!newPath) {
+            console.warn("Path blocked by placement at", x, y);
             // Blocked! Revert
             gridRef.current[y][x].isWall = false;
             setToastMessage("Cannot block the path!");
