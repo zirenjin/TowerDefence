@@ -1,6 +1,6 @@
 import React from 'react';
-import { type TowerType, TOWER_COSTS } from '../../types';
-import { Shield, Zap, Hexagon, Play, Pause, RefreshCw, Square } from 'lucide-react';
+import { type TowerType, TOWER_COSTS, type SelectedEntity } from '../../types';
+import { Shield, Zap, Hexagon, Play, Pause, RefreshCw, Square, Trash2, Info } from 'lucide-react';
 import clsx from 'clsx';
 
 interface SidebarProps {
@@ -12,6 +12,8 @@ interface SidebarProps {
     onNextWave: () => void;
     isWaveActive: boolean;
     onReset: () => void;
+    selectedEntity: SelectedEntity | null;
+    onDeleteEntity: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -22,7 +24,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     onSelectTower,
     onNextWave,
     isWaveActive,
-    onReset
+    onReset,
+    selectedEntity,
+    onDeleteEntity
 }) => {
     return (
         <div className="w-64 bg-white p-6 shadow-xl flex flex-col gap-6 h-full border-l border-gray-200 overflow-y-auto">
@@ -62,49 +66,95 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             <div className="flex-1">
-                <h2 className="text-sm font-bold text-gray-500 uppercase mb-3">Towers</h2>
-                <div className="space-y-3">
-                    <TowerButton
-                        type="PRIMARY"
-                        icon={<Shield size={20} />}
-                        label="Basic"
-                        cost={TOWER_COSTS.PRIMARY}
-                        color="bg-blue-500"
-                        isSelected={selectedTower === 'PRIMARY'}
-                        onClick={() => onSelectTower(selectedTower === 'PRIMARY' ? null : 'PRIMARY')}
-                        canAfford={money >= TOWER_COSTS.PRIMARY}
-                    />
-                    <TowerButton
-                        type="SLOW"
-                        icon={<Hexagon size={20} />}
-                        label="Slow"
-                        cost={TOWER_COSTS.SLOW}
-                        color="bg-green-500"
-                        isSelected={selectedTower === 'SLOW'}
-                        onClick={() => onSelectTower(selectedTower === 'SLOW' ? null : 'SLOW')}
-                        canAfford={money >= TOWER_COSTS.SLOW}
-                    />
-                    <TowerButton
-                        type="AREA"
-                        icon={<Zap size={20} />}
-                        label="Area"
-                        cost={TOWER_COSTS.AREA}
-                        color="bg-purple-500"
-                        isSelected={selectedTower === 'AREA'}
-                        onClick={() => onSelectTower(selectedTower === 'AREA' ? null : 'AREA')}
-                        canAfford={money >= TOWER_COSTS.AREA}
-                    />
-                    <TowerButton
-                        type="WALL"
-                        icon={<Square size={20} />}
-                        label="Wall"
-                        cost={TOWER_COSTS.WALL}
-                        color="bg-gray-600"
-                        isSelected={selectedTower === 'WALL'}
-                        onClick={() => onSelectTower(selectedTower === 'WALL' ? null : 'WALL')}
-                        canAfford={money >= TOWER_COSTS.WALL}
-                    />
-                </div>
+                {selectedEntity ? (
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                        <div className="flex items-center gap-2 text-gray-700 font-bold border-b pb-2">
+                            <Info size={20} />
+                            <span>{selectedEntity.type === 'TOWER' ? 'Tower Info' : 'Wall Info'}</span>
+                        </div>
+
+                        {selectedEntity.type === 'TOWER' && selectedEntity.tower && (
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Type:</span>
+                                    <span className="font-medium">{selectedEntity.tower.type}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Damage:</span>
+                                    <span className="font-medium">{selectedEntity.tower.damage}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Range:</span>
+                                    <span className="font-medium">{selectedEntity.tower.range}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Fire Rate:</span>
+                                    <span className="font-medium">{selectedEntity.tower.fireRate}/s</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedEntity.type === 'WALL' && (
+                            <div className="text-sm text-gray-500 italic">
+                                Blocks enemy path. No stats.
+                            </div>
+                        )}
+
+                        <button
+                            onClick={onDeleteEntity}
+                            className="w-full flex items-center justify-center gap-2 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors font-medium text-sm"
+                        >
+                            <Trash2 size={16} />
+                            Delete (Refund ${Math.floor((selectedEntity.type === 'TOWER' && selectedEntity.tower ? selectedEntity.tower.cost : TOWER_COSTS.WALL) * 0.5)})
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <h2 className="text-sm font-bold text-gray-500 uppercase mb-3">Towers</h2>
+                        <div className="space-y-3">
+                            <TowerButton
+                                type="PRIMARY"
+                                icon={<Shield size={20} />}
+                                label="Basic"
+                                cost={TOWER_COSTS.PRIMARY}
+                                color="bg-blue-500"
+                                isSelected={selectedTower === 'PRIMARY'}
+                                onClick={() => onSelectTower(selectedTower === 'PRIMARY' ? null : 'PRIMARY')}
+                                canAfford={money >= TOWER_COSTS.PRIMARY}
+                            />
+                            <TowerButton
+                                type="SLOW"
+                                icon={<Hexagon size={20} />}
+                                label="Slow"
+                                cost={TOWER_COSTS.SLOW}
+                                color="bg-green-500"
+                                isSelected={selectedTower === 'SLOW'}
+                                onClick={() => onSelectTower(selectedTower === 'SLOW' ? null : 'SLOW')}
+                                canAfford={money >= TOWER_COSTS.SLOW}
+                            />
+                            <TowerButton
+                                type="AREA"
+                                icon={<Zap size={20} />}
+                                label="Area"
+                                cost={TOWER_COSTS.AREA}
+                                color="bg-purple-500"
+                                isSelected={selectedTower === 'AREA'}
+                                onClick={() => onSelectTower(selectedTower === 'AREA' ? null : 'AREA')}
+                                canAfford={money >= TOWER_COSTS.AREA}
+                            />
+                            <TowerButton
+                                type="WALL"
+                                icon={<Square size={20} />}
+                                label="Wall"
+                                cost={TOWER_COSTS.WALL}
+                                color="bg-gray-600"
+                                isSelected={selectedTower === 'WALL'}
+                                onClick={() => onSelectTower(selectedTower === 'WALL' ? null : 'WALL')}
+                                canAfford={money >= TOWER_COSTS.WALL}
+                            />
+                        </div>
+                    </>
+                )}
             </div>
 
             <button

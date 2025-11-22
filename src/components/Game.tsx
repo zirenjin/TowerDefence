@@ -5,37 +5,26 @@ import Grid from './Grid';
 import EntityLayer from './EntityLayer';
 import Sidebar from './UI/Sidebar';
 import Toast from './UI/Toast';
-import { useGameLoop } from '../hooks/useGameLoop';
-import { findPath } from '../utils/pathfinding';
-import {
-    type Cell,
-    type Enemy,
-    type GameState,
-    GRID_SIZE,
-    type Projectile,
-    type Tower,
-    type TowerType,
-    type Vector2,
-    TOWER_COSTS
-} from '../types';
 import { GAME_CONFIG, TOWER_STATS } from '../constants/gameConfig';
+import { type GameState, type Tower, type Cell, type Vector2, type Enemy, type Projectile, type SelectedEntity, type TowerType, GRID_SIZE, TOWER_COSTS } from '../types';
+import { findPath } from '../utils/pathfinding';
+import { useGameLoop } from '../hooks/useGameLoop';
+
+const createInitialGrid = () => {
+    const grid = Array(GRID_SIZE).fill(null).map((_, y) =>
+        Array(GRID_SIZE).fill(null).map((_, x) => ({
+            x,
+            y,
+            isWall: false,
+            isStart: false,
+            isEnd: false,
+            isPath: false
+        }))
+    );
+    return grid;
+};
 
 const Game: React.FC = () => {
-    // Helper to create initial grid
-    const createInitialGrid = () => {
-        const grid = Array(GRID_SIZE).fill(null).map((_, y) =>
-            Array(GRID_SIZE).fill(null).map((_, x) => ({
-                x,
-                y,
-                isWall: false,
-                isStart: false,
-                isEnd: false,
-                isPath: false
-            }))
-        );
-        return grid;
-    };
-
     // Game State
     const [gameState, setGameState] = useState<GameState>({
         money: GAME_CONFIG.INITIAL_MONEY,
@@ -50,16 +39,11 @@ const Game: React.FC = () => {
         path: []
     });
 
-    const [selectedTower, setSelectedTower] = useState<TowerType | null>(null);
-    const [isWaveActive, setIsWaveActive] = useState(false);
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-    // Refs for mutable game state to avoid re-renders during game loop
-    const enemiesRef = useRef<Enemy[]>([]);
-    const projectilesRef = useRef<Projectile[]>([]);
     const towersRef = useRef<Tower[]>([]);
     const gridRef = useRef<Cell[][]>([]); // Keep a ref for fast access in loop
     const pathRef = useRef<Vector2[]>([]); // Store the fixed path
+    const enemiesRef = useRef<Enemy[]>([]);
+    const projectilesRef = useRef<Projectile[]>([]);
 
     // Wave management
     const waveStateRef = useRef({
@@ -69,6 +53,11 @@ const Game: React.FC = () => {
         spawnInterval: 1.0, // Seconds between spawns
         waveComplete: false
     });
+
+    const [selectedTower, setSelectedTower] = useState<TowerType | null>(null);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(null);
+    const [isWaveActive, setIsWaveActive] = useState(false);
 
     const resetGame = () => {
         // Generate Grid
@@ -178,15 +167,6 @@ const Game: React.FC = () => {
         return { x: 0, y: 0 }; // Should not happen
     };
 
-    const getEndNode = (grid: Cell[][]): Vector2 => {
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
-                if (grid[y][x].isEnd) return { x, y };
-            }
-        }
-        return { x: GRID_SIZE - 1, y: GRID_SIZE - 1 }; // Should not happen
-    };
-
     const spawnEnemy = () => {
         const start = getStartNode(gridRef.current);
 
@@ -232,7 +212,7 @@ const Game: React.FC = () => {
     };
 
     // Game Loop
-    useGameLoop((deltaTime) => {
+    useGameLoop((deltaTime: number) => {
         if (!gameState.isPlaying) return;
 
         // 1. Spawning Enemies
@@ -374,42 +354,141 @@ const Game: React.FC = () => {
             setIsWaveActive(false);
             return;
         }
-
-        projectilesRef.current = projectilesRef.current.filter(p => p.damage > 0);
     }, gameState.isPlaying);
 
+    const handleDeleteEntity = () => {
+        if (!selectedEntity) return;
+
+        const { x, y } = selectedEntity.position;
+        let refund = 0;
+
+        if (selectedEntity.type === 'TOWER' && selectedEntity.tower) {
+            refund = Math.floor(selectedEntity.tower.cost * 0.5);
+            // Remove tower from towers array
+            towersRef.current = towersRef.current.filter(t => t.id !== selectedEntity.id);
+        } else if (selectedEntity.type === 'WALL') {
+            refund = Math.floor(TOWER_COSTS.WALL * 0.5);
+        }
+
+        // Update Grid
+        const newGridState = [...gridRef.current.map(row => [...row])];
+        newGridState[y][x].isWall = false;
+        newGridState[y][x].towerId = undefined;
+        newGridState[y][x].isPath = false; // Will be updated by path recalc
+
+        // Recalculate Path
+        let startNode: Vector2 | null = null;
+        let endNode: Vector2 | null = null;
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (newGridState[r][c].isStart) startNode = { x: c, y: r };
+                if (newGridState[r][c].isEnd) endNode = { x: c, y: r };
+            }
+        }
+
+        if (startNode && endNode) {
+            const newPath = findPath(newGridState, startNode, endNode);
+            if (newPath) {
+                // Clear old path flags
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        newGridState[r][c].isPath = false;
+                    }
+                }
+                // Set new path flags
+                newPath.forEach(pos => {
+                    newGridState[pos.y][pos.x].isPath = true;
+                });
+                pathRef.current = newPath;
+
+                // Recalculate enemy paths
+                enemiesRef.current.forEach(enemy => {
+                    const currentGridPos = {
+                        x: Math.round(enemy.position.x),
+                        y: Math.round(enemy.position.y)
+                    };
+                    const enemyPath = findPath(newGridState, currentGridPos, endNode!);
+                    if (enemyPath) {
+                        enemy.path = enemyPath;
+                        enemy.targetIndex = 0;
+                    }
+                });
+            }
+        }
+
+        gridRef.current = newGridState;
+        setGameState(prev => ({
+            ...prev,
+            money: prev.money + refund,
+            grid: newGridState,
+            towers: [...towersRef.current]
+        }));
+
+        setToastMessage(`Refunded ${refund} gold`);
+        setSelectedEntity(null);
+    };
+
     const handleCellClick = (x: number, y: number) => {
-        if (!selectedTower) return;
+        if (gameState.isGameOver) return;
 
         const cell = gridRef.current[y][x];
-        if (cell.isWall || cell.isStart || cell.isEnd || cell.towerId) return;
+
+        // 1. Select existing entity
+        if (cell.towerId || cell.isWall) {
+            const entityType = cell.towerId ? 'TOWER' : 'WALL';
+            const tower = cell.towerId ? towersRef.current.find(t => t.id === cell.towerId) : undefined;
+
+            setSelectedEntity({
+                type: entityType,
+                position: { x, y },
+                id: cell.towerId,
+                tower: tower
+            });
+            setSelectedTower(null);
+            return;
+        }
+
+        // 2. Deselect if clicking empty space (and not placing)
+        if (selectedEntity && !selectedTower) {
+            setSelectedEntity(null);
+            return;
+        }
+
+        // 3. Place Tower
+        if (!selectedTower) return;
 
         const cost = TOWER_COSTS[selectedTower];
-        if (gameState.money < cost) return;
+        if (gameState.money < cost) {
+            setToastMessage("Not enough money!");
+            return;
+        }
 
-        // Check if placement blocks path
-        // Temporarily place wall
+        // Check path blocking
         gridRef.current[y][x].isWall = true;
-        const start = getStartNode(gridRef.current);
-        const end = getEndNode(gridRef.current);
 
-        // console.log("Checking path blocking:", { start, end, placement: {x, y} });
+        let startNode: Vector2 | null = null;
+        let endNode: Vector2 | null = null;
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (gridRef.current[r][c].isStart) startNode = { x: c, y: r };
+                if (gridRef.current[r][c].isEnd) endNode = { x: c, y: r };
+            }
+        }
 
-        const newPath = findPath(gridRef.current, start, end);
+        if (!startNode || !endNode) {
+            gridRef.current[y][x].isWall = false;
+            return;
+        }
+
+        const newPath = findPath(gridRef.current, startNode, endNode);
 
         if (!newPath) {
-            console.warn("Path blocked by placement at", x, y);
-            // Blocked! Revert
-            gridRef.current[y][x].isWall = false;
             setToastMessage("Cannot block the path!");
+            gridRef.current[y][x].isWall = false;
             return;
         }
 
         // Valid placement
-        // 1. Deduct money
-        setGameState(prev => ({ ...prev, money: prev.money - cost }));
-
-        // 2. Add Tower
         const towerStats = TOWER_STATS[selectedTower];
         const newTower: Tower = {
             id: uuidv4(),
@@ -421,41 +500,44 @@ const Game: React.FC = () => {
             lastFired: 0,
             cost: cost
         };
+
         towersRef.current.push(newTower);
 
-        // 3. Update Grid State
+        // Update Grid
         const newGridState = [...gridRef.current.map(row => [...row])];
         newGridState[y][x].isWall = true;
         newGridState[y][x].towerId = newTower.id;
 
-        // Update path visualization
-        // Clear old path
+        // Update Path Visualization
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
                 newGridState[r][c].isPath = false;
             }
         }
-        // Set new path
-        if (newPath) {
-            newPath.forEach(pos => {
-                newGridState[pos.y][pos.x].isPath = true;
-            });
-        }
+        newPath.forEach(pos => {
+            newGridState[pos.y][pos.x].isPath = true;
+        });
 
         gridRef.current = newGridState;
-        pathRef.current = newPath; // Update global path for new enemies
-        setGameState(prev => ({ ...prev, grid: newGridState, towers: [...towersRef.current] }));
+        pathRef.current = newPath;
 
-        // 4. Recalculate paths for all existing enemies
+        setGameState(prev => ({
+            ...prev,
+            money: prev.money - cost,
+            grid: newGridState,
+            towers: [...towersRef.current]
+        }));
+
+        // Recalculate enemy paths
         enemiesRef.current.forEach(enemy => {
             const currentGridPos = {
                 x: Math.round(enemy.position.x),
                 y: Math.round(enemy.position.y)
             };
-            const enemyPath = findPath(gridRef.current, currentGridPos, end);
+            const enemyPath = findPath(newGridState, currentGridPos, endNode!);
             if (enemyPath) {
                 enemy.path = enemyPath;
-                enemy.targetIndex = 0; // Reset to start of new path
+                enemy.targetIndex = 0;
             }
         });
     };
@@ -503,6 +585,8 @@ const Game: React.FC = () => {
                     onNextWave={startNextWave}
                     isWaveActive={isWaveActive}
                     onReset={resetGame}
+                    selectedEntity={selectedEntity}
+                    onDeleteEntity={handleDeleteEntity}
                 />
             </div>
         </>

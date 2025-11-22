@@ -72,3 +72,10 @@ export const TOWER_COSTS: Record<TowerType, number> = {
     AREA: 150,
     WALL: 5,
 };
+
+export interface SelectedEntity {
+    type: 'TOWER' | 'WALL';
+    position: Vector2;
+    id?: string;
+    tower?: Tower;
+}
